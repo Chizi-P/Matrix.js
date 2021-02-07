@@ -50,6 +50,7 @@ class Matrix extends StaticMatrix {
             : array.map(() => new Array(width));
 
         } else throw '傳入參數數據類型錯誤';
+
         // 繼承 Matrix 的方法;
         matrix.__proto__ = Matrix.prototype;
         // 添加 Matrix 屬性到 matrix 屬性，因為 返回的是 matrix 是原生Array，不帶有 Matrix 的屬性，必須放在 constructor 最後
@@ -76,15 +77,13 @@ class Matrix extends StaticMatrix {
     /**
      * @param {any} value
      */
-    set init(value) {
+    init(value) {
         for (let i = 0, l1 = this.length; i < l1; i++) {
             for (let j = 0, l2 = this[0].length; j < l2; j++) {
                 this[i][j] = value;
             }
         }
-    }
-    toString() {
-        P.shared.toSave(this);
+        return this;
     }
 }
 // Matrix 繼承 Array 的方法和迭代器
