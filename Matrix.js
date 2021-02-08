@@ -11,11 +11,21 @@ Object.prototype.safeDefineProperty = Object.prototype.safeDefineProperty ?? fun
 
 // 淺拷貝
 Object.safeDefineProperty(Array.prototype, 'shallowCopy', {
-    value: () => this.slice()
+    value: function() {
+        this.slice();
+    }
 });
 // 深拷貝（無關聯）
 Object.safeDefineProperty(Array.prototype, 'deepCopy', {
-    value: () => JSON.parse(JSON.stringify(this))
+    value: function() {
+        return JSON.parse(JSON.stringify(this));
+    }
+});
+
+Object.safeDefineProperty(Array.prototype, 'totalLength', {
+    get: function() {
+        return this.flat(Infinity).length
+    }
 });
 
 
@@ -34,7 +44,14 @@ class StaticMatrix {
         
         } else throw '參數應為 Matrix 類別';
     }
+    static isSameLength(matrixObj, arrayObj) {
+        if (matrixObj instanceof Matrix && Array.isArray(arrayObj)) {
+            return matrixObj.width * matrixObj.height == arrayObj.length;
+            
+        } else throw '參數應為 (Matrix 類別, Array 類別)';
+    }
 }
+
 
 class Matrix extends StaticMatrix {
     constructor(height = 1, width = 1, init) {
@@ -84,43 +101,92 @@ class Matrix extends StaticMatrix {
         return this._width;
     }
 
-    /** 
-     * Basic operations
-     * 基本運算
-     */
-    
-    forAll(currentValue, indexI, indexJ, ) {
-        for (let i = 0; i < this.height; i++) {
-            for (let j = 0; j < this.width; j++) {
-                matrix[i][j] = this[i][j] + value[i]?.[j] ?? value;
-            }
-        }
-    }
-
-    plus(value = 0) {
-        if (value instanceof Matrix) {
-            if (!Matrix.isSameSize(this, value)) {
-                throw '矩陣不同大小，無法相加';
-            }
-        }
+    mapAll(callback) {
         let matrix = new Matrix(this.height, this.width);
         for (let i = 0; i < this.height; i++) {
             for (let j = 0; j < this.width; j++) {
-                matrix[i][j] = this[i][j] + value[i]?.[j] ?? value;
+                matrix[i][j] = callback(this[i][j], i * this.width + j, i, j);
             }
         }
         return matrix;
     }
-    minus(value = 0) {
-        
-    }
-    multiply() {
 
-    }
-    divide() {
+    /** 
+     * Basic operations
+     * 基本運算
+     */
 
+    __privateBasicOperationsMethod(value, isSameSizeMatrix, isSameTotalLengthMatrix, isSameTotalLengthArray, other) {
+        if (Array.isArray(value)) {
+            if (value instanceof Matrix) {
+                if (Matrix.isSameSize(this, value)) {
+                    return this.mapAll(isSameSizeMatrix);
+                } else if (this.height * this.width == value.height * value.width) {
+                    let matrix = value.reshape(this.height, this.width);
+                    return this.mapAll(isSameTotalLengthMatrix(matrix));
+                } else throw '矩陣的總長度不同，無法運算';
+            } else if (this.height * this.width == value.totalLength) {
+                const flatted = value.flat(Infinity);
+                return this.mapAll(isSameTotalLengthArray(flatted));
+            } else throw '矩陣的總長度不同，無法運算';
+        } else return this.mapAll(other);
     }
     
+    plus(value = 0) {
+        return this.__privateBasicOperationsMethod(
+            value,
+            (e, _, i, j) => e + value[i][j],
+            matrix => (e, _, i, j) => e + matrix[i][j],
+            flatted => (e, n) => e + flatted[n],
+            e => e + value
+        );
+    }
+    minus(value = 0) {
+        return this.__privateBasicOperationsMethod(
+            value,
+            (e, _, i, j) => e - value[i][j],
+            matrix => (e, _, i, j) => e - matrix[i][j],
+            flatted => (e, n) => e - flatted[n],
+            e => e - value
+        );
+    }
+    multiply(value) {
+        return this.__privateBasicOperationsMethod(
+            value,
+            (e, _, i, j) => e * value[i][j],
+            matrix => (e, _, i, j) => e * matrix[i][j],
+            flatted => (e, n) => e * flatted[n],
+            e => e * value
+        );
+    }
+    divide(value) {
+        return this.__privateBasicOperationsMethod(
+            value,
+            (e, _, i, j) => e / value[i][j],
+            matrix => (e, _, i, j) => e / matrix[i][j],
+            flatted => (e, n) => e / flatted[n],
+            e => e / value
+        );
+    }
+    mod(value) {
+        return this.__privateBasicOperationsMethod(
+            value,
+            (e, _, i, j) => e % value[i][j],
+            matrix => (e, _, i, j) => e % matrix[i][j],
+            flatted => (e, n) => e % flatted[n],
+            e => e % value
+        );
+    }
+    pow(value) {
+        return this.__privateBasicOperationsMethod(
+            value,
+            (e, _, i, j) => e ** value[i][j],
+            matrix => (e, _, i, j) => e ** matrix[i][j],
+            flatted => (e, n) => e ** flatted[n],
+            e => e ** value
+        );
+    }
+
     /**
      * @param {any} value
      */
@@ -151,19 +217,3 @@ class Matrix extends StaticMatrix {
 // Matrix 繼承 Array 的方法和迭代器
 Matrix.prototype.__proto__ = Array.prototype;
 
-function executionTime(func) {
-    const t0 = new Date().getTime();
-    func();
-    const t1 = new Date().getTime();
-    console.log(`執行了 ${t1 - t0} 毫秒`);
-    return t1 - t0;
-}
-
-
-let A = new Matrix(2, 3, 1);
-let B = new Matrix(2, 3, 0);
-console.log(A);
-executionTime(() => {
-    console.log(A.plus(B.init(3)))
-})
-console.log(A)
