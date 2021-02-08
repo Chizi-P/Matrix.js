@@ -9,13 +9,13 @@ Object.prototype.safeDefineProperty = Object.prototype.safeDefineProperty ?? fun
     return Object.defineProperty(obj, prop, descriptor);
 }
 
-// 淺拷貝
+// 淺拷貝 //
 Object.safeDefineProperty(Array.prototype, 'shallowCopy', {
     value: function() {
         this.slice();
     }
 });
-// 深拷貝（無關聯）
+// 深拷貝（無關聯）//
 Object.safeDefineProperty(Array.prototype, 'deepCopy', {
     value: function() {
         return JSON.parse(JSON.stringify(this));
@@ -28,6 +28,22 @@ Object.safeDefineProperty(Array.prototype, 'totalLength', {
     }
 });
 
+// 淺尺寸 // 
+Object.safeDefineProperty(Array.prototype, 'lengths', {
+    get: function() {
+        let lengths = [];
+        for (let i = 0; i < this.length; i++) {
+            lengths.push(
+                Array.isArray(this[i]) 
+                ? this[i].length 
+                : 1
+            );
+        }
+        return lengths;
+    }
+});
+
+
 
 class StaticMatrix {
     constructor() {}
@@ -36,7 +52,7 @@ class StaticMatrix {
         return obj.every?.(e => e.length === w) ?? false;
     }
     static isSquare(obj) {
-        return obj.isMatrix() && obj.length === obj[0].length;
+        return Matrix.isMatrix(obj) && obj.length === obj[0].length;
     }
     static isSameSize(obj1, obj2) {
         if (obj1 instanceof Matrix && obj2 instanceof Matrix) {
@@ -50,25 +66,73 @@ class StaticMatrix {
             
         } else throw '參數應為 (Matrix 類別, Array 類別)';
     }
+    /**
+     * Matrix.isArray(.) 判斷是否為一維矩陣，與 Array.isArray(.) 有區別
+     * @param {array} array 
+     */
+    static isArray(array) {
+        return array.every(e => !Array.isArray(e));
+    }
+
+    // Determinant 行列式 //
+    static det(matrix) {
+        if (!Matrix.isMatrix(matrix)) {
+            throw '此參數無法計算行列式';
+        }
+        if (!Matrix.isSquare(matrix)) {
+            throw '矩陣必須為方陣';
+        }
+        let pt = 0,
+            nt = 0;
+        if (matrix.length == 2) {
+            return matrix[0][0] * matrix[1][1] - matrix[0][1] * matrix[1][0];
+        }
+        for (let k = 0, w = matrix[0].length; k < w; k++) {
+            let s = 1;
+            for (let i = 0, j = k, h = matrix.length; i < h; i++, j++) {
+                j = j >= w ? 0 : j;
+                s *= matrix[i][j];
+            }
+            pt += s;
+        }
+        for (let w = matrix[0].length, k = w - 1; k >= 0; k--) {
+            let s = 1;
+            for (let i = 0, j = k, h = matrix.length; i < h; i++, j--) {
+                j = j < 0 ? w - 1 : j;
+                s *= matrix[i][j];
+            }
+            nt += s;
+        }
+        return pt - nt;
+    }
+    // adjugate matrix 伴隨矩陣 // ！未完成
+    static adj(matrix) {
+        new Matrix(matrix.size);
+        (-1)**(i + j) * m[i][j]
+    }
 }
 
 
 class Matrix extends StaticMatrix {
-    constructor(height = 1, width = 1, init) {
+    constructor(height, width, init) {
         super();
-        let matrix;
+        let matrix = [];
         if (Array.isArray(height)) {
             if (Matrix.isMatrix(height)) {
                 matrix = height.deepCopy();
-                this._height = matrix.length;
-                this._width = matrix[0].length;
+                this.height = matrix.length;
+                this.width = matrix[0]?.length;
+                if (this.width == undefined) {
+                    this.width = this.height;
+                    this.height = 1;
+                }
 
             } else throw '傳入了非矩陣';
 
         } else if (Number.isInteger(height + width)) {
             // _不被調用的屬性
-            this._height = height;
-            this._width = width;
+            this.height = height;
+            this.width = width;
             // 生成矩陣
             let array = new Array(height).fill(null);
             matrix = init != undefined 
@@ -94,11 +158,15 @@ class Matrix extends StaticMatrix {
     get content() {
         return [...this];
     }
-    get height() {
-        return this._height;
-    }
-    get width() {
-        return this._width;
+    // get height() {
+    //     return this._height;
+    // }
+    // get width() {
+    //     return this._width;
+    // }
+    
+    get size() {
+        return [this.height, this.width];
     }
 
     mapAll(callback) {
@@ -150,7 +218,7 @@ class Matrix extends StaticMatrix {
             e => e - value
         );
     }
-    multiply(value) {
+    multiply(value = 1) {
         return this.__privateBasicOperationsMethod(
             value,
             (e, _, i, j) => e * value[i][j],
@@ -159,7 +227,7 @@ class Matrix extends StaticMatrix {
             e => e * value
         );
     }
-    divide(value) {
+    divide(value = 1) {
         return this.__privateBasicOperationsMethod(
             value,
             (e, _, i, j) => e / value[i][j],
@@ -168,7 +236,7 @@ class Matrix extends StaticMatrix {
             e => e / value
         );
     }
-    mod(value) {
+    mod(value = 1) {
         return this.__privateBasicOperationsMethod(
             value,
             (e, _, i, j) => e % value[i][j],
@@ -177,7 +245,7 @@ class Matrix extends StaticMatrix {
             e => e % value
         );
     }
-    pow(value) {
+    pow(value = 1) {
         return this.__privateBasicOperationsMethod(
             value,
             (e, _, i, j) => e ** value[i][j],
@@ -198,21 +266,49 @@ class Matrix extends StaticMatrix {
         }
         return this;
     }
-    reshape(row, column) {
-        if (this.height * this.width != row * column) {
+    // 重塑 //
+    reshape(height, width) {
+        if (this.height * this.width != height * width) {
             throw '此參數值的長寬無法重塑矩陣';
         }
-        let matrix = new Matrix(row, column);
-        // const iterator = this.flat().entries();
+        let matrix = new Matrix(height, width);
         const temp = this.flat();
-        for (let i = 0; i < row; i++) {
-            for (let j = 0; j < column; j++) {
-                  matrix[i][j] = temp[i + j * row];
+        for (let i = 0; i < height; i++) {
+            for (let j = 0; j < width; j++) {
+                  matrix[i][j] = temp[i + j * height];
             }
         }
         return matrix;
     }
-    
+    // 分割 //
+    // ！需優化，！無法任意分割
+    partition(row, column) {
+        let subMatrixs = [[],[],[],[]];
+        for (let i = 0; i < this.height; i++) {
+            for (let j = 0; j < this.width; j++) {
+                subMatrixs[
+                    i < column ? j < row ? 0 : 2 : j < row ? 1 : 3
+                ].push(this[i][j]);
+            }
+        }
+        subMatrixs[0] = new Matrix(subMatrixs[0]).reshape(row, column);
+        subMatrixs[1] = new Matrix(subMatrixs[1]).reshape(row, this.width - column);
+        subMatrixs[2] = new Matrix(subMatrixs[2]).reshape(this.height - row, column);
+        subMatrixs[3] = new Matrix(subMatrixs[3]).reshape(this.height - row, this.width - column);
+        return subMatrixs;
+    }
+    // 刪除一列 // 原地，返回被刪除元素之 Matrix
+    deleteRow(num) {
+        return new Matrix(this.splice(num, 1))
+    }
+    // 刪除一行 // 原地，返回被刪除元素之 Matrix
+    deleteColumn(num) {
+        let matrix = new Matrix(...this.size);
+        for (let i = 0; i < this.height; i++) {
+            matrix[i] = this[i].splice(num, 1);
+        }
+        return matrix;
+    }
 }
 // Matrix 繼承 Array 的方法和迭代器
 Matrix.prototype.__proto__ = Array.prototype;
