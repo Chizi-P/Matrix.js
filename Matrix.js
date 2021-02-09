@@ -43,8 +43,6 @@ Object.safeDefineProperty(Array.prototype, 'lengths', {
     }
 });
 
-
-
 class StaticMatrix {
     constructor() {}
     static isMatrix(obj) {
@@ -106,12 +104,12 @@ class StaticMatrix {
         return pt - nt;
     }
     // adjugate matrix 伴隨矩陣 // ！未完成
+    // https://zh.wikipedia.org/wiki/%E4%BC%B4%E9%9A%8F%E7%9F%A9%E9%98%B5
     static adj(matrix) {
         new Matrix(matrix.size);
         (-1)**(i + j) * m[i][j]
     }
 }
-
 
 class Matrix extends StaticMatrix {
     constructor(height, width, init) {
@@ -313,3 +311,10 @@ class Matrix extends StaticMatrix {
 // Matrix 繼承 Array 的方法和迭代器
 Matrix.prototype.__proto__ = Array.prototype;
 
+class MatrixSize {
+    constructor(height, width) {
+        let size = { height, width };
+        size.__proto__ = this;
+        return Object.seal(size);
+    }
+}
