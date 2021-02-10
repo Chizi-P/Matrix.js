@@ -73,7 +73,15 @@ class StaticMatrix {
     static isArray(array) {
         return array.every(e => !Array.isArray(e));
     }
-
+    static transpose(matrix) {
+        let transposeMatrix = new Matrix(matrix.width, matrix.height);
+        for (let i = 0; i < matrix.height; i++) {
+            for (let j = 0; j < matrix.width; j++) {
+                transposeMatrix[j][i] = matrix[i][j];
+            }
+        }
+        return transposeMatrix;
+    }
     // Determinant 行列式 //
     static det(matrix) {
         if (!Matrix.isMatrix(matrix)) {
@@ -105,11 +113,52 @@ class StaticMatrix {
         }
         return pt - nt;
     }
-    // adjugate matrix 伴隨矩陣 // ！未完成
-    // https://zh.wikipedia.org/wiki/%E4%BC%B4%E9%9A%8F%E7%9F%A9%E9%98%B5
+    // 餘子矩陣 //
+    static minor(matrix) {
+        if (!this.isSquare(matrix)) throw '參數需為方陣';
+        let minorOfMatrix = new Matrix(matrix.size);
+        for (let i = 0; i < matrix.height; i++) {
+            for (let j = 0; j < matrix.height; j++) {
+                let temp = new Matrix(matrix);
+                temp.deleteRow(i);
+                temp.deleteColumn(j);
+                minorOfMatrix[i][j] = (-1)**(i + j + 2) * this.det(temp); 
+            }
+        }
+        return minorOfMatrix;
+    }
+    // adjugate matrix 伴隨矩陣 // 
     static adj(matrix) {
-        new Matrix(matrix.size);
-        (-1)**(i + j) * m[i][j]
+        return Matrix.transpose(matrix);
+    }
+    // 逆矩陣 // ！ 判斷是否可逆
+    static inverse(matrix) {
+        return this.adj(matrix).divide(this.det(matrix));
+    } 
+    // 是否可逆矩陣 // ！ 未完成
+    static isInvertible(matrix) {
+        return this.isSquare(matrix);
+    }
+
+    // Strassen algorithm 施特拉森演算法
+    static strassenAlgorithm2x2(A, B) {
+        if (!this.isSameSize(A, B)) {
+            throw '算法要求兩相同尺寸的方陣';
+        }
+        let M = [];
+        let C = new Matrix(A.size);
+        M[0] = (A[0][0] + A[1][1]) * (B[0][0] + B[1][1]);
+        M[1] = (A[1][0] + A[1][1]) * B[0][0];
+        M[2] =  A[0][0] * (B[0][1] - B[1][1]);
+        M[3] =  A[1][1] * (B[1][0] - B[0][0]);
+        M[4] = (A[0][0] + A[0][1]) * B[1][1];
+        M[5] = (A[1][0] - A[0][0]) * (B[0][0] + B[0][1]);
+        M[6] = (A[0][1] - A[1][1]) * (B[1][0] + B[1][1]);
+        C[0][0] = M[0] + M[3] - M[4] + M[6];
+        C[0][1] = M[2] + M[4];
+        C[1][0] = M[1] + M[3];
+        C[1][1] = M[0] - M[1] + M[2] + M[5];
+        return C;
     }
 }
 
@@ -153,17 +202,17 @@ class Matrix extends StaticMatrix {
         } else throw '傳入參數數據類型錯誤';
 
         // 繼承 Matrix 的方法;
-        matrix.__proto__ = Matrix.prototype;
+        matrix.__proto__ = this;
         // 添加 Matrix 屬性到 matrix 屬性，因為 返回的是 matrix 是原生Array，不帶有 Matrix 的屬性，必須放在 constructor 最後
-        const propertyNames = Object.getOwnPropertyNames(this); // 獲取自身屬性
-        for (const name of propertyNames) {
-            // 如果 Array 存在就不定義該屬性
-            Array[name] ?? Object.defineProperty(matrix, name, {
-                value: this[name],
-                configurable: false,
-                writable: false
-            })
-        }
+        // const propertyNames = Object.getOwnPropertyNames(this); // 獲取自身屬性
+        // for (const name of propertyNames) {
+        //     // 如果 Array 存在就不定義該屬性
+        //     Array[name] ?? Object.defineProperty(matrix, name, {
+        //         value: this[name],
+        //         configurable: false,
+        //         writable: false
+        //     })
+        // }
         return matrix;
     }
     get content() {
@@ -265,6 +314,19 @@ class Matrix extends StaticMatrix {
             e => e ** value
         );
     }
+    product(B) {
+        let result = new Matrix(this.height, B.width, 0);
+        for (let i = 0; i < this.height; i++) {
+            for (let j = 0; j < this.width; j++) {
+                for (let k = 0; k < B.width; k++) {
+                    result[i][k] += this[i][j] * B[j][k];
+                }
+            }
+        }
+        return result;
+    }
+    
+
 
     /**
      * @param {any} value
@@ -309,14 +371,16 @@ class Matrix extends StaticMatrix {
         return subMatrixs;
     }
     // 刪除一列 // 原地，返回被刪除元素之 Matrix
-    deleteRow(num) {
-        return new Matrix(this.splice(num, 1))
+    deleteRow(num, deleteCount = 1 ) {
+        this.height--;
+        return new Matrix(this.splice(num, deleteCount));
     }
     // 刪除一行 // 原地，返回被刪除元素之 Matrix
-    deleteColumn(num) {
+    deleteColumn(num, deleteCount = 1) {
+        this.width--;
         let matrix = new Matrix(this.size);
         for (let i = 0; i < this.height; i++) {
-            matrix[i] = this[i].splice(num, 1);
+            matrix[i] = this[i].splice(num, deleteCount);
         }
         return matrix;
     }
@@ -332,5 +396,4 @@ class MatrixSize {
         return Object.seal(size);
     }
 }
-
 
