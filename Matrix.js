@@ -1,4 +1,6 @@
 /**
+ * Create by chizi
+ * 
  * Matrix Class
  * 方便做矩陣計算
  */
@@ -111,10 +113,12 @@ class StaticMatrix {
     }
 }
 
+
 class Matrix extends StaticMatrix {
     constructor(height, width, init) {
         super();
         let matrix = [];
+        
         if (Array.isArray(height)) {
             if (Matrix.isMatrix(height)) {
                 matrix = height.deepCopy();
@@ -127,7 +131,7 @@ class Matrix extends StaticMatrix {
 
             } else throw '傳入了非矩陣';
 
-        } else if (Number.isInteger(height + width)) {
+        } else if (Number.isInteger(height) && Number.isInteger(width)) {
             // _不被調用的屬性
             this.height = height;
             this.width = width;
@@ -137,6 +141,15 @@ class Matrix extends StaticMatrix {
             ? array.map(() => new Array(width).fill(init)) 
             : array.map(() => new Array(width));
 
+        } else if (height instanceof MatrixSize) {
+            this.height = height.height;
+            this.width = height.width;
+            const init = width;
+            let array = new Array(this.height).fill(null);
+            matrix = init != undefined 
+            ? array.map(() => new Array(this.width).fill(init)) 
+            : array.map(() => new Array(this.width));
+            
         } else throw '傳入參數數據類型錯誤';
 
         // 繼承 Matrix 的方法;
@@ -164,7 +177,7 @@ class Matrix extends StaticMatrix {
     // }
     
     get size() {
-        return [this.height, this.width];
+        return new MatrixSize(this.height, this.width);
     }
 
     mapAll(callback) {
@@ -301,7 +314,7 @@ class Matrix extends StaticMatrix {
     }
     // 刪除一行 // 原地，返回被刪除元素之 Matrix
     deleteColumn(num) {
-        let matrix = new Matrix(...this.size);
+        let matrix = new Matrix(this.size);
         for (let i = 0; i < this.height; i++) {
             matrix[i] = this[i].splice(num, 1);
         }
@@ -311,6 +324,7 @@ class Matrix extends StaticMatrix {
 // Matrix 繼承 Array 的方法和迭代器
 Matrix.prototype.__proto__ = Array.prototype;
 
+
 class MatrixSize {
     constructor(height, width) {
         let size = { height, width };
@@ -318,3 +332,5 @@ class MatrixSize {
         return Object.seal(size);
     }
 }
+
+
