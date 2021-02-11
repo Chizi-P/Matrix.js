@@ -73,6 +73,34 @@ class StaticMatrix {
     static isArray(array) {
         return array.every(e => !Array.isArray(e));
     }
+    // 判斷每一元素是否一樣 //
+    static isSame(A, B) {
+        return this.isSameSize(A, B) && A.every((row, i) => row.every((e, j) => e === B[i][j]));
+    }
+    // 判斷上三角矩陣 //
+    static isUpperTriangular(matrix) {
+
+    }
+    // 判斷下三角矩陣 //
+    static isLowerTriangular(matrix) {
+
+    }
+    // 判斷對角矩陣 //
+    static isDiagonal(matrix) {
+
+    }
+    // 判斷對稱矩陣 //
+    static isSymmetric(matrix) {
+        return this.isSame(matrix, this.transpose(matrix));
+    }
+    // 判斷 斜對稱矩陣 或叫 反對稱矩陣 //
+    static isSkewSymmetric(matrix) {
+        return this.isSame(matrix.divide(-1), this.transpose(matrix));
+    }
+    // 判斷冪零矩陣 //
+    static isNilpotent() {
+
+    }
     static transpose(matrix) {
         let transposeMatrix = new Matrix(matrix.width, matrix.height);
         for (let i = 0; i < matrix.height; i++) {
@@ -81,6 +109,19 @@ class StaticMatrix {
             }
         }
         return transposeMatrix;
+    }
+    // 對角線矩陣 //
+    static diag() {
+        const l = arguments.length;
+        let result = new Matrix(l, l, 0);
+        for (let i = 0; i < l; i++) {
+            result[i][i] = arguments[i];
+        }
+        return result;
+    }
+    // 單位矩陣 //
+    static I(n = 3) {
+        return this.diag(...Array(n).fill(1));
     }
     // Determinant 行列式 //
     static det(matrix) {
@@ -305,15 +346,15 @@ class Matrix extends StaticMatrix {
             e => e % value
         );
     }
-    pow(value = 1) {
-        return this.__privateBasicOperationsMethod(
-            value,
-            (e, _, i, j) => e ** value[i][j],
-            matrix => (e, _, i, j) => e ** matrix[i][j],
-            flatted => (e, n) => e ** flatted[n],
-            e => e ** value
-        );
-    }
+    // pow(value = 1) {
+    //     return this.__privateBasicOperationsMethod(
+    //         value,
+    //         (e, _, i, j) => e ** value[i][j],
+    //         matrix => (e, _, i, j) => e ** matrix[i][j],
+    //         flatted => (e, n) => e ** flatted[n],
+    //         e => e ** value
+    //     );
+    // }
     product(B) {
         let result = new Matrix(this.height, B.width, 0);
         for (let i = 0; i < this.height; i++) {
@@ -325,9 +366,6 @@ class Matrix extends StaticMatrix {
         }
         return result;
     }
-    
-
-
     /**
      * @param {any} value
      */
@@ -356,18 +394,19 @@ class Matrix extends StaticMatrix {
     // 分割 //
     // ！需優化，！無法任意分割
     partition(row, column) {
-        let subMatrixs = [[],[],[],[]];
+        let temp = [[],[],[],[]];
+        let subMatrixs = new Matrix(2, 2);
         for (let i = 0; i < this.height; i++) {
             for (let j = 0; j < this.width; j++) {
-                subMatrixs[
+                temp[
                     i < column ? j < row ? 0 : 2 : j < row ? 1 : 3
                 ].push(this[i][j]);
             }
         }
-        subMatrixs[0] = new Matrix(subMatrixs[0]).reshape(row, column);
-        subMatrixs[1] = new Matrix(subMatrixs[1]).reshape(row, this.width - column);
-        subMatrixs[2] = new Matrix(subMatrixs[2]).reshape(this.height - row, column);
-        subMatrixs[3] = new Matrix(subMatrixs[3]).reshape(this.height - row, this.width - column);
+        subMatrixs[0][0] = new Matrix(temp[0]).reshape(row, column);
+        subMatrixs[0][1] = new Matrix(temp[1]).reshape(row, this.width - column);
+        subMatrixs[1][0] = new Matrix(temp[2]).reshape(this.height - row, column);
+        subMatrixs[1][1] = new Matrix(temp[3]).reshape(this.height - row, this.width - column);
         return subMatrixs;
     }
     // 刪除一列 // 原地，返回被刪除元素之 Matrix
