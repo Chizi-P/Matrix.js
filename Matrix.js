@@ -207,6 +207,28 @@ class StaticMatrix {
         C[1][1] = M[0] - M[1] + M[2] + M[5];
         return C;
     }
+
+    /** 轉換 */
+    // 2維 //
+    static rotationMatrix2D(theta) {
+        return new Matrix([
+            [Math.cos(theta), -Math.sin(theta)],
+            [Math.sin(theta), Math.cos(theta)]
+        ]);
+    }
+    // 旋轉 // ！ 未完成
+    static rotation2D(matrix, theta) {
+        let result = new Matrix(matrix.size);
+        let rotationMatrix2D = this.rotationMatrix2D(theta);
+        matrix.forAll((e, _, y, x) => {
+            let newPosition = rotationMatrix2D.product(new Matrix([[y], [x]]));
+            let newX = Math.round(newPosition[1]);
+            let newY = Math.round(newPosition[0]);
+            console.log(newPosition)
+            result[newY][newX] = e;
+        });
+        return result;
+    }
 }
 
 
@@ -284,6 +306,13 @@ class Matrix extends StaticMatrix {
             }
         }
         return matrix;
+    }
+    forAll(callback) {
+        for (let i = 0; i < this.height; i++) {
+            for (let j = 0; j < this.width; j++) {
+                callback(this[i][j], i * this.width + j, i, j);
+            }
+        }
     }
 
     // 遍歷對角線的元素 //
