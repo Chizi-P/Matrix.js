@@ -77,17 +77,22 @@ class StaticMatrix {
     static isSame(A, B) {
         return this.isSameSize(A, B) && A.every((row, i) => row.every((e, j) => e === B[i][j]));
     }
+    // 判斷單位矩陣 //
+    static isI(matrix) {
+        return matrix.everyDiag(e => e === 1) && this.isDiagonal(matrix);
+    }
     // 判斷上三角矩陣 //
     static isUpperTriangular(matrix) {
-
+        return matrix.everyLowerTriangular(e => e === 0);
     }
     // 判斷下三角矩陣 //
     static isLowerTriangular(matrix) {
-
+        return matrix.everyUpperTriangular(e => e === 0);
     }
     // 判斷對角矩陣 //
     static isDiagonal(matrix) {
-
+        return matrix.everyUpperTriangular(e => e === 0) 
+        && matrix.everyLowerTriangular(e => e === 0);
     }
     // 判斷對稱矩陣 //
     static isSymmetric(matrix) {
@@ -101,6 +106,7 @@ class StaticMatrix {
     static isNilpotent() {
 
     }
+    // 轉置 //
     static transpose(matrix) {
         let transposeMatrix = new Matrix(matrix.width, matrix.height);
         for (let i = 0; i < matrix.height; i++) {
@@ -280,6 +286,77 @@ class Matrix extends StaticMatrix {
         return matrix;
     }
 
+    // 遍歷對角線的元素 //
+    forDiag(callback) {
+        if (!Matrix.isSquare(this)) {
+            throw '矩陣不是方陣';
+        }
+        for (let i = 0; i < this.height; i++) {
+            callback(this[i][i]);
+        }
+    }
+    // 遍歷上三角的元素 //
+    forUpperTriangular(callback) {
+        if (!Matrix.isSquare(this)) {
+            throw '矩陣不是方陣';
+        }
+        for (let i = 1; i < this.height; i++) {
+            for (let j = 0; j < this.height - i; j++) {
+                callback(this[j][j + i])
+            }
+        }
+    }
+    // 遍歷下三角的元素 //
+    forLowerTriangular(callback) {
+        if (!Matrix.isSquare(this)) {
+            throw '矩陣不是方陣';
+        }
+        for (let i = 1; i < this.height; i++) {
+            for (let j = 0; j < this.height - i; j++) {
+                callback(this[j + i][j]);
+            }
+        }
+    }
+    // 判斷對角線的全部元素是否符合條件 //
+    everyDiag(callback) {
+        if (!Matrix.isSquare(this)) {
+            throw '矩陣不是方陣';
+        }
+        for (let i = 0; i < this.height; i++) {
+            if (!callback(this[i][i])) {
+                return false;
+            }
+        }
+        return true;
+    }
+    // 判斷上三角的全部元素是否符合條件 //
+    everyUpperTriangular(callback) {
+        if (!Matrix.isSquare(this)) {
+            throw '矩陣不是方陣';
+        }
+        for (let i = 1; i < this.height; i++) {
+            for (let j = 0; j < this.height - i; j++) {
+                if (!callback(this[j][j + i])) {
+                    return false;
+                }
+            }
+        }
+        return true
+    }
+    // 判斷下三角的全部元素是否符合條件 //
+    everyLowerTriangular(callback) {
+        if (!Matrix.isSquare(this)) {
+            throw '矩陣不是方陣';
+        }
+        for (let i = 1; i < this.height; i++) {
+            for (let j = 0; j < this.height - i; j++) {
+                if (!callback(this[j + i][j])) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
     /** 
      * Basic operations
      * 基本運算
