@@ -106,17 +106,14 @@ class StaticMatrix {
     static isNilpotent() {
 
     }
-    // 轉置 //
-    static transpose(matrix) {
-        let transposeMatrix = new Matrix(matrix.width, matrix.height);
-        for (let i = 0; i < matrix.height; i++) {
-            for (let j = 0; j < matrix.width; j++) {
-                transposeMatrix[j][i] = matrix[i][j];
-            }
-        }
-        return transposeMatrix;
+    // 跡 trace
+    static tr(matrix) {
+        if (!this.isSquare(matrix)) throw '矩陣必須為方陣';
+        let result = 0
+        matrix.forDiag(e => result += e);
+        return result;
     }
-    // 對角線矩陣 //
+    // 生成對角線矩陣 //
     static diag() {
         const l = arguments.length;
         let result = new Matrix(l, l, 0);
@@ -131,12 +128,8 @@ class StaticMatrix {
     }
     // Determinant 行列式 //
     static det(matrix) {
-        if (!Matrix.isMatrix(matrix)) {
-            throw '此參數無法計算行列式';
-        }
-        if (!Matrix.isSquare(matrix)) {
-            throw '矩陣必須為方陣';
-        }
+        if (!Matrix.isMatrix(matrix)) throw '此參數無法計算行列式';
+        if (!Matrix.isSquare(matrix)) throw '矩陣必須為方陣';
         let pt = 0,
             nt = 0;
         if (matrix.length == 2) {
@@ -187,11 +180,9 @@ class StaticMatrix {
         return this.isSquare(matrix);
     }
 
-    // Strassen algorithm 施特拉森演算法
+    // Strassen algorithm 施特拉森演算法 //
     static strassenAlgorithm2x2(A, B) {
-        if (!this.isSameSize(A, B)) {
-            throw '算法要求兩相同尺寸的方陣';
-        }
+        if (!this.isSameSize(A, B)) throw '算法要求兩相同尺寸的方陣';
         let M = [];
         let C = new Matrix(A.size);
         M[0] = (A[0][0] + A[1][1]) * (B[0][0] + B[1][1]);
@@ -472,9 +463,17 @@ class Matrix extends StaticMatrix {
         }
         return result;
     }
-    /**
-     * @param {any} value
-     */
+    // 轉置 //
+    get T() {
+        let transposeMatrix = new Matrix(this.width, this.height);
+        for (let i = 0; i < this.height; i++) {
+            for (let j = 0; j < this.width; j++) {
+                transposeMatrix[j][i] = this[i][j];
+            }
+        }
+        return transposeMatrix;
+    }
+    // 初始化 //
     init(value) {
         for (let i = 0; i < this.height; i++) {
             for (let j = 0; j < this.width; j++) {
