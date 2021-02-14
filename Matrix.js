@@ -45,6 +45,15 @@ Object.safeDefineProperty(Array.prototype, 'lengths', {
     }
 });
 
+class MatrixError {
+    static isInstanceofMatrix(...objs) {
+        if (!objs.every(obj => obj instanceof Matrix)) throw '參數應為 Matrix 類別';
+    }
+    static isSquare(...objs) {
+        if (!objs.every(obj => Matrix.isSquare(obj))) throw '矩陣必須為方陣';
+    }
+}
+
 class StaticMatrix {
     constructor() {}
     static isMatrix(obj) {
@@ -55,10 +64,8 @@ class StaticMatrix {
         return Matrix.isMatrix(obj) && obj.length === obj[0].length;
     }
     static isSameSize(obj1, obj2) {
-        if (obj1 instanceof Matrix && obj2 instanceof Matrix) {
-            return obj1.height === obj2.height && obj1.width === obj2.width;
-        
-        } else throw '參數應為 Matrix 類別';
+        MatrixError.isInstanceofMatrix(obj1, obj2);
+        return obj1.height === obj2.height && obj1.width === obj2.width;
     }
     static isSameLength(matrixObj, arrayObj) {
         if (matrixObj instanceof Matrix && Array.isArray(arrayObj)) {
@@ -108,7 +115,7 @@ class StaticMatrix {
     }
     // 跡 trace
     static tr(matrix) {
-        if (!this.isSquare(matrix)) throw '矩陣必須為方陣';
+        MatrixError.isSquare(matrix);
         let result = 0
         matrix.forDiag(e => result += e);
         return result;
@@ -129,7 +136,7 @@ class StaticMatrix {
     // Determinant 行列式 //
     static det(matrix) {
         if (!Matrix.isMatrix(matrix)) throw '此參數無法計算行列式';
-        if (!Matrix.isSquare(matrix)) throw '矩陣必須為方陣';
+        MatrixError.isSquare(matrix);
         let pt = 0,
             nt = 0;
         if (matrix.length == 2) {
@@ -155,7 +162,7 @@ class StaticMatrix {
     }
     // 餘子矩陣 //
     static minor(matrix) {
-        if (!this.isSquare(matrix)) throw '參數需為方陣';
+        MatrixError.isSquare(matrix);
         let minorOfMatrix = new Matrix(matrix.size);
         for (let i = 0; i < matrix.height; i++) {
             for (let j = 0; j < matrix.height; j++) {
@@ -308,18 +315,14 @@ class Matrix extends StaticMatrix {
 
     // 遍歷對角線的元素 //
     forDiag(callback) {
-        if (!Matrix.isSquare(this)) {
-            throw '矩陣不是方陣';
-        }
+        MatrixError.isSquare(this);
         for (let i = 0; i < this.height; i++) {
             callback(this[i][i]);
         }
     }
     // 遍歷上三角的元素 //
     forUpperTriangular(callback) {
-        if (!Matrix.isSquare(this)) {
-            throw '矩陣不是方陣';
-        }
+        MatrixError.isSquare(this);
         for (let i = 1; i < this.height; i++) {
             for (let j = 0; j < this.height - i; j++) {
                 callback(this[j][j + i])
@@ -328,9 +331,7 @@ class Matrix extends StaticMatrix {
     }
     // 遍歷下三角的元素 //
     forLowerTriangular(callback) {
-        if (!Matrix.isSquare(this)) {
-            throw '矩陣不是方陣';
-        }
+        MatrixError.isSquare(this);
         for (let i = 1; i < this.height; i++) {
             for (let j = 0; j < this.height - i; j++) {
                 callback(this[j + i][j]);
@@ -339,9 +340,7 @@ class Matrix extends StaticMatrix {
     }
     // 判斷對角線的全部元素是否符合條件 //
     everyDiag(callback) {
-        if (!Matrix.isSquare(this)) {
-            throw '矩陣不是方陣';
-        }
+        MatrixError.isSquare(this);
         for (let i = 0; i < this.height; i++) {
             if (!callback(this[i][i])) {
                 return false;
@@ -351,9 +350,7 @@ class Matrix extends StaticMatrix {
     }
     // 判斷上三角的全部元素是否符合條件 //
     everyUpperTriangular(callback) {
-        if (!Matrix.isSquare(this)) {
-            throw '矩陣不是方陣';
-        }
+        MatrixError.isSquare(this);
         for (let i = 1; i < this.height; i++) {
             for (let j = 0; j < this.height - i; j++) {
                 if (!callback(this[j][j + i])) {
@@ -365,9 +362,7 @@ class Matrix extends StaticMatrix {
     }
     // 判斷下三角的全部元素是否符合條件 //
     everyLowerTriangular(callback) {
-        if (!Matrix.isSquare(this)) {
-            throw '矩陣不是方陣';
-        }
+        MatrixError.isSquare(this);
         for (let i = 1; i < this.height; i++) {
             for (let j = 0; j < this.height - i; j++) {
                 if (!callback(this[j + i][j])) {
@@ -527,6 +522,55 @@ class Matrix extends StaticMatrix {
             matrix[i] = this[i].splice(num, deleteCount);
         }
         return matrix;
+    }
+    // // 不原地 
+    padding(value) {
+        let result = new Matrix(this.height + value * 2, this.width + value * 2);
+        for (let i = 0; i < this.height; i++) {
+            for (let j = 0; j < this.width; j++) {
+                result[i + value][j + value] = this[i][j];
+            }
+        }
+        return result;
+    }
+    /**
+     * 卷積的動作
+     * @param {MatrixSize} size 
+     * @param {number} stride 
+     * @param {function} callback 
+     * @param {function} callback2
+     */
+    convo(size, stride = 1, callback, callback2) {
+        const featureMapWidth = (this.width - size.width) / stride + 1;
+        const featureMapHeight = (this.height - size.height) / stride + 1;
+        for (let i = 0; i < featureMapHeight; i += stride) {
+            for (let j = 0; j < featureMapWidth; j += stride) {
+                for (let k = 0; k < size.height; k++) {
+                    for (let l = 0; l < size.width; l++) {
+                        callback(this[k + i][l + j], k, l, i, j)
+                    }
+                }
+                callback2(i, j);
+            }
+        }
+    }
+    // 卷積 // 不原地
+    convolution(matrix, stride = 1) {
+        const featureMapWidth = (this.width - matrix.width) / stride + 1;
+        const featureMapHeight = (this.height - matrix.height) / stride + 1;
+        let featureMap = new Matrix(featureMapHeight, featureMapWidth);
+        for (let i = 0; i < featureMapHeight; i += stride) {
+            for (let j = 0; j < featureMapWidth; j += stride) {
+                let weight = 0;
+                for (let k = 0; k < matrix.height; k++) {
+                    for (let l = 0; l < matrix.width; l++) {
+                        weight += this[k + i][l + j] * matrix[k][l];
+                    }
+                }
+                featureMap[i][j] = weight;
+            }
+        }
+        return featureMap;
     }
 }
 // Matrix 繼承 Array 的方法和迭代器
