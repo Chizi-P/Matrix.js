@@ -52,6 +52,9 @@ class MatrixError {
     static isSquare(...objs) {
         if (!objs.every(obj => Matrix.isSquare(obj))) throw '矩陣必須為方陣';
     }
+    static isSameSize(...objs) {
+        if (!objs.every(obj => obj.height === objs[0].height && obj.width === objs[0].width)) throw '矩陣需相同尺寸大小';
+    }
 }
 
 class StaticMatrix {
@@ -189,7 +192,8 @@ class StaticMatrix {
 
     // Strassen algorithm 施特拉森演算法 //
     static strassenAlgorithm2x2(A, B) {
-        if (!this.isSameSize(A, B)) throw '算法要求兩相同尺寸的方陣';
+        MatrixError.isSquare(A, B);
+        MatrixError.isSameSize(A, B);
         let M = [];
         let C = new Matrix(A.size);
         M[0] = (A[0][0] + A[1][1]) * (B[0][0] + B[1][1]);
@@ -538,19 +542,20 @@ class Matrix extends StaticMatrix {
      * @param {MatrixSize} size 
      * @param {number} stride 
      * @param {function} callback 
-     * @param {function} callback2
+     * @param {function} callback2 - 返回的值會成為新矩陣在i,j位置的值
      */
     convo(size, stride = 1, callback, callback2) {
         const featureMapWidth = (this.width - size.width) / stride + 1;
         const featureMapHeight = (this.height - size.height) / stride + 1;
+        let featureMap = new Matrix(featureMapHeight, featureMapWidth);
         for (let i = 0; i < featureMapHeight; i += stride) {
             for (let j = 0; j < featureMapWidth; j += stride) {
                 for (let k = 0; k < size.height; k++) {
                     for (let l = 0; l < size.width; l++) {
-                        callback(this[k + i][l + j], k, l, i, j)
+                        callback(this[k + i][l + j], k, l, i, j);
                     }
                 }
-                callback2(i, j);
+                featureMap[i][j] = callback2(i, j);
             }
         }
     }
