@@ -218,19 +218,6 @@ class StaticMatrix {
             [Math.sin(theta), Math.cos(theta)]
         ]);
     }
-    // 旋轉 // ！ 未完成
-    static rotation2D(matrix, theta) {
-        let result = new Matrix(matrix.size);
-        let rotationMatrix2D = this.rotationMatrix2D(theta);
-        matrix.forAll((e, _, y, x) => {
-            let newPosition = rotationMatrix2D.product(new Matrix([[y], [x]]));
-            let newX = Math.round(newPosition[1]);
-            let newY = Math.round(newPosition[0]);
-            console.log(newPosition)
-            result[newY][newX] = e;
-        });
-        return result;
-    }
 }
 
 
@@ -527,6 +514,15 @@ class Matrix extends StaticMatrix {
         }
         return matrix;
     }
+    // 順時針旋轉90度 // 原地
+    rotate(matrix) {
+        let temp = matrix.reverse().deepCopy();
+        temp.forEach((row, i) => {
+            row.forEach((v, j) => {
+                matrix[j][i] = v;
+            });
+        });
+    }
     // // 不原地 
     padding(value) {
         let result = new Matrix(this.height + value * 2, this.width + value * 2);
@@ -558,6 +554,7 @@ class Matrix extends StaticMatrix {
                 featureMap[i][j] = callback2(i, j);
             }
         }
+        return featureMap;
     }
     // 卷積 // 不原地
     convolution(matrix, stride = 1) {
