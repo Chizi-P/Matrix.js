@@ -225,7 +225,6 @@ class Matrix extends StaticMatrix {
     constructor(height, width, init) {
         super();
         let matrix = [];
-        
         if (Array.isArray(height)) {
             if (Matrix.isMatrix(height)) {
                 matrix = height.deepCopy();
@@ -470,6 +469,10 @@ class Matrix extends StaticMatrix {
     }
     // 重塑 //
     reshape(height, width) {
+        if (height instanceof MatrixSize) {
+            width = height.width;
+            height = height.height;
+        }
         if (this.height * this.width != height * width) {
             throw '此參數值的長寬無法重塑矩陣';
         }
@@ -477,7 +480,7 @@ class Matrix extends StaticMatrix {
         const temp = this.flat();
         for (let i = 0; i < height; i++) {
             for (let j = 0; j < width; j++) {
-                  matrix[i][j] = temp[i + j * height];
+                  matrix[i][j] = temp[i * height + j];
             }
         }
         return matrix;
@@ -514,6 +517,14 @@ class Matrix extends StaticMatrix {
         }
         return matrix;
     }
+    // // 原地
+    putIn(matrix, row, column) {
+        for (let i = row; i < this.height + row && i < matrix.height; i++) {
+            for (let j = column; j < this.width + column && i < matrix.width; j++) {
+                matrix[i][j] = this[i - row][j - column];
+            }
+        }
+    }
     // 順時針旋轉90度 // 原地
     rotate(matrix) {
         let temp = matrix.reverse().deepCopy();
@@ -525,7 +536,7 @@ class Matrix extends StaticMatrix {
     }
     // // 不原地 
     padding(value) {
-        let result = new Matrix(this.height + value * 2, this.width + value * 2);
+        let result = new Matrix(this.height + value * 2, this.width + value * 2, 0);
         for (let i = 0; i < this.height; i++) {
             for (let j = 0; j < this.width; j++) {
                 result[i + value][j + value] = this[i][j];
@@ -537,18 +548,20 @@ class Matrix extends StaticMatrix {
      * 卷積的動作
      * @param {MatrixSize} size 
      * @param {number} stride 
+     * @param {function} initCallback 初始化
      * @param {function} callback 
      * @param {function} callback2 - 返回的值會成為新矩陣在i,j位置的值
      */
-    convo(size, stride = 1, callback, callback2) {
-        const featureMapWidth = (this.width - size.width) / stride + 1;
-        const featureMapHeight = (this.height - size.height) / stride + 1;
+    convo(size, stride = 1, initCallback, callback, callback2) {
+        const featureMapWidth = Math.round((this.width - size.width) / stride + 1);
+        const featureMapHeight = Math.round((this.height - size.height) / stride + 1);
         let featureMap = new Matrix(featureMapHeight, featureMapWidth);
-        for (let i = 0; i < featureMapHeight; i += stride) {
-            for (let j = 0; j < featureMapWidth; j += stride) {
+        for (let i = 0; i < featureMapHeight; i++) {
+            for (let j = 0; j < featureMapWidth; j++) {
+                initCallback(i, j);
                 for (let k = 0; k < size.height; k++) {
                     for (let l = 0; l < size.width; l++) {
-                        callback(this[k + i][l + j], k, l, i, j);
+                        callback(this[k + i * stride][l + j * stride], k, l, i * stride, j * stride);
                     }
                 }
                 featureMap[i][j] = callback2(i, j);
@@ -587,3 +600,7 @@ class MatrixSize {
     }
 }
 
+module.exports = {
+    Matrix,
+    MatrixSize
+}
