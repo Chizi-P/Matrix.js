@@ -37,9 +37,9 @@
 
 判斷 是否總長度一樣，即面積一樣。
 
-#### Matrix.isArray(array)
+#### Matrix.isArray(\<Array>)
 
-
+判斷傳入的 `Array` 是否為矩陣。
 
 #### Matrix.isSame(A, B)
 
