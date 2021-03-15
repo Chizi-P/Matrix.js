@@ -177,9 +177,18 @@ class StaticMatrix {
         }
         return minorOfMatrix;
     }
+    static transpose(matrix) {
+        let transposeMatrix = new Matrix(matrix.width, matrix.height);
+        for (let i = 0; i < matrix.height; i++) {
+            for (let j = 0; j < matrix.width; j++) {
+                transposeMatrix[j][i] = matrix[i][j];
+            }
+        }
+        return transposeMatrix;
+    }
     // adjugate matrix 伴隨矩陣 // 
     static adj(matrix) {
-        return Matrix.transpose(matrix);
+        return this.transpose(matrix);
     }
     // 逆矩陣 // ！ 判斷是否可逆
     static inverse(matrix) {
@@ -256,7 +265,13 @@ class Matrix extends StaticMatrix {
             ? array.map(() => new Array(this.width).fill(init)) 
             : array.map(() => new Array(this.width));
             
-        } else throw '傳入參數數據類型錯誤';
+        } else if (height instanceof URL) {
+            let url = height;
+            console.log(height);
+            url.href
+        }
+        
+        else throw '傳入參數數據類型錯誤';
 
         // 繼承 Matrix 的方法;
         matrix.__proto__ = this;
@@ -526,6 +541,7 @@ class Matrix extends StaticMatrix {
         }
     }
     // 順時針旋轉90度 // 原地
+    // !
     rotate(matrix) {
         let temp = matrix.reverse().deepCopy();
         temp.forEach((row, i) => {
@@ -604,3 +620,4 @@ module.exports = {
     Matrix,
     MatrixSize
 }
+
