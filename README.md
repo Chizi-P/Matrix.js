@@ -159,7 +159,7 @@
 
 #### \<Matrix>.__privateBasicOperationsMethod(value, isSameSizeMatrix, isSameTotalLengthMatrix, isSameTotalLengthArray, other)
 
-該方法不應該去使用。
+不應該使用該方法。
 
 #### \<Matrix>.plus(value = 0)
 
@@ -234,4 +234,6 @@
 ## MatrixSize
 
 ### Constructor
+
+#### new MatrixSize(height, width)
 
